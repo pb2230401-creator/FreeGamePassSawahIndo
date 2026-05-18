@@ -1,0 +1,180 @@
+-- GIFT EXPLOIT FULL PROCESS - Meniru Client Asli
+local RS = game:GetService("ReplicatedStorage")
+local Players = game:GetService("Players")
+local LocalPlayer = Players.LocalPlayer
+
+print("========== GIFT SYSTEM ANALYZER ==========")
+
+-- Cari remote functions
+local RequestGift = nil
+local GiftPurchaseDone = nil
+
+for _, obj in ipairs(RS:GetDescendants()) do
+    if obj:IsA("RemoteFunction") and obj.Name == "RequestGift" then
+        RequestGift = obj
+    elseif obj:IsA("RemoteEvent") or obj:IsA("RemoteFunction") then
+        if obj.Name == "GiftPurchaseDone" then
+            GiftPurchaseDone = obj
+        end
+    end
+end
+
+if not RequestGift then
+    warn("ERROR: RequestGift tidak ditemukan!")
+    return
+end
+
+if not GiftPurchaseDone then
+    warn("WARNING: GiftPurchaseDone tidak ditemukan! Mungkin tidak diperlukan.")
+end
+
+-- GUI sederhana untuk test
+local ScreenGui = Instance.new("ScreenGui")
+local Frame = Instance.new("Frame")
+local UserIdBox = Instance.new("TextBox")
+local ItemBox = Instance.new("TextBox")
+local SendButton = Instance.new("TextButton")
+local StatusLabel = Instance.new("TextLabel")
+local CloseButton = Instance.new("TextButton")
+
+ScreenGui.ResetOnSpawn = false
+Frame.Size = UDim2.new(0, 350, 0, 280)
+Frame.Position = UDim2.new(0.5, -175, 0.5, -140)
+Frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+Frame.BorderSizePixel = 0
+Frame.Active = true
+Frame.Draggable = true
+
+UserIdBox.Position = UDim2.new(0, 15, 0, 60)
+UserIdBox.Size = UDim2.new(1, -30, 0, 35)
+UserIdBox.PlaceholderText = "Target UserId"
+UserIdBox.Text = ""
+UserIdBox.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+UserIdBox.TextColor3 = Color3.new(1, 1, 1)
+
+ItemBox.Position = UDim2.new(0, 15, 0, 105)
+ItemBox.Size = UDim2.new(1, -30, 0, 35)
+ItemBox.PlaceholderText = "Item Name (e.g., VIP, FastGrow)"
+ItemBox.Text = "VIP"
+ItemBox.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+ItemBox.TextColor3 = Color3.new(1, 1, 1)
+
+SendButton.Position = UDim2.new(0, 15, 0, 150)
+SendButton.Size = UDim2.new(1, -30, 0, 40)
+SendButton.Text = "KIRIM GIFT (TEST TRUE)"
+SendButton.BackgroundColor3 = Color3.fromRGB(0, 180, 0)
+SendButton.TextColor3 = Color3.new(1, 1, 1)
+
+StatusLabel.Position = UDim2.new(0, 0, 1, 5)
+StatusLabel.Size = UDim2.new(1, 0, 0, 25)
+StatusLabel.BackgroundTransparency = 1
+StatusLabel.Text = "Ready"
+StatusLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+StatusLabel.Font = Enum.Font.SourceSansBold
+
+CloseButton.Size = UDim2.new(0, 30, 0, 30)
+CloseButton.Position = UDim2.new(1, -35, 0, 5)
+CloseButton.Text = "X"
+CloseButton.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
+
+
+print("ScreenGui =", ScreenGui)
+print("Frame =", Frame)
+print("UserIdBox =", UserIdBox)
+print("ItemBox =", ItemBox)
+print("SendButton =", SendButton)
+print("StatusLabel =", StatusLabel)
+print("CloseButton =", CloseButton)
+print("LocalPlayer =", LocalPlayer)
+print("PlayerGui =", LocalPlayer:FindFirstChild("PlayerGui"))
+
+-- Tambahkan ke Parent
+local PlayerGui = LocalPlayer:WaitForChild("PlayerGui")
+
+Frame.Parent = ScreenGui
+UserIdBox.Parent = Frame
+ItemBox.Parent = Frame
+SendButton.Parent = Frame
+StatusLabel.Parent = Frame
+CloseButton.Parent = Frame
+ScreenGui.Parent = PlayerGui
+
+-- Fungsi utama
+SendButton.MouseButton1Click:Connect(function()
+    local targetId = tonumber(UserIdBox.Text)
+    local itemName = ItemBox.Text
+    
+    if not targetId then
+        StatusLabel.Text = "❌ User ID tidak valid!"
+        StatusLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
+        return
+    end
+    
+    if itemName == "" then
+        StatusLabel.Text = "❌ Nama item kosong!"
+        return
+    end
+    
+    print("MULAI PROSES GIFT...")
+    print("Target: " .. targetId)
+    print("Item: " .. itemName)
+    
+    -- TAHAP 1: Request Gift (seperti client asli)
+    local success1, response1 = pcall(function()
+        return RequestGift:InvokeServer("PROMPT_GIFT", targetId, itemName)
+    end)
+    
+    if not success1 then
+        StatusLabel.Text = "❌ Error Tahap 1: " .. tostring(response1)
+        StatusLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
+        print("Tahap 1 ERROR:", response1)
+        return
+    end
+    
+    print("Tahap 1 Response:", table.unpack(table.pack(response1)))
+    StatusLabel.Text = "✅ Tahap 1 Berhasil..."
+    StatusLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
+    
+    -- Jeda singkat untuk simulasi proses
+    task.wait(0.5)
+    
+    -- TAHAP 2: Konfirmasi Pembayaran SEPERTI SUCCESS
+    if GiftPurchaseDone then
+        print("Melakukan Tahap 2 dengan STATUS TRUE...")
+        
+        local success2, response2 = pcall(function()
+            -- KUNCI DI SINI: Kirim TRUE alih-alih FALSE
+            if GiftPurchaseDone:IsA("RemoteEvent") then
+                GiftPurchaseDone:FireServer(targetId, true)
+            else
+                GiftPurchaseDone:InvokeServer(targetId, true)
+            end
+        end)
+        
+        if success2 then
+            print("Tahap 2 SELESAI - Status: TRUE")
+            StatusLabel.Text = "✅ GIFT BERHASIL DIKIRIM!"
+            StatusLabel.TextColor3 = Color3.fromRGB(0, 255, 0)
+            print("=================================")
+            print("GIFT TELAH DIKIRIM KE USER " .. targetId)
+            print("ITEM: " .. itemName)
+            print("STATUS: SUCCESS (TRUE)")
+            print("=================================")
+        else
+            StatusLabel.Text = "❌ Error Tahap 2: " .. tostring(response2)
+            StatusLabel.TextColor3 = Color3.fromRGB(255, 0, 0)
+            print("Tahap 2 ERROR:", response2)
+        end
+    else
+        -- Jika GiftPurchaseDone tidak ada, mungkin sistem satu tahap saja
+        StatusLabel.Text = "⚠️ GiftPurchaseDone tidak ditemukan"
+        StatusLabel.TextColor3 = Color3.fromRGB(255, 165, 0)
+        print("GiftPurchaseDone tidak ada - coba lanjutkan tanpa konfirmasi")
+    end
+end)
+
+CloseButton.MouseButton1Click:Connect(function()
+    ScreenGui:Destroy()
+end)
+
+print("Script siap digunakan! Tekan tombol di GUI.")
